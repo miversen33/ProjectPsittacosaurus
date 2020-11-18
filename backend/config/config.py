@@ -10,7 +10,6 @@ class Config:
 
 
 class Development(Config):
-    DATABASE_URI = 'postgres://football_dev:5rI5B!GOWhT$bom@bladebeat-server:5430'
     DEBUG = True
 
 
