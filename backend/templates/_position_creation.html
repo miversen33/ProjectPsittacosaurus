@@ -1,0 +1,208 @@
+{% extends '_layout.html' %}
+
+{% block style %}
+
+{% endblock style %}
+
+{% block title %}Position Generation Management{% endblock title %}
+
+{% block body %}
+
+<div class="flex">
+    <div class="col">
+        <div class="row">
+            <div class="col-lg-3 col-7 d-flex">
+                <div class="btn-group btn-group-toggle" data-toggle="buttons" id="typeRadioButtons">
+                    <label class="btn btn-secondary" for="offense">
+                        <input type="radio" name="offense" id="offense" autocomplete="off">Offense
+                    </label>
+                    <label class="btn btn-secondary" for="defense">
+                        <input type="radio" name="defense" id="defense" autocomplete="off">Defense
+                    </label>
+                    <label class="btn btn-secondary" for="special_teams">
+                        <input type="radio" name="special_teams" id="special_teams" autocomplete="off">Special Teams
+                    </label>
+                </div>
+            </div>
+            <div class="col d-none" id="newPositionCol">
+                <div class="input-group">
+                    <button class="btn btn-secondary" id="newPositionButton">Add New Position</button>
+                    <input type="text" class="form-control" id="newPositionInput">
+                </div>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col d-none" id="positionContainer">
+                <!-- <button class="btn btn-secondary" id="newPositionButton">Add New Position</button> -->
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col d-none" id="subpositionContainer">
+                <!-- <button class="btn btn-secondary" id="newSubPositionButton">Add New Subposition</button>-->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock body %}
+{% block script %}
+
+<script>
+    var selectedSide = undefined;
+    var selectedPosition = undefined;
+    const addPositionButtonText = 'Add New Position';
+    const addSubPositionButtonText = 'Add New Sub Position';
+    ready(() => {
+        document.querySelectorAll('#typeRadioButtons > label > input').forEach((child) => {
+            child.addEventListener('click', (event) => {
+                clearPositionContainer();
+                clearSubPositionContainer();
+                selectedSide = event.target.id;
+                selectedPosition = undefined;
+                document.getElementById('subpositionContainer').classList.add('d-none');
+                fetchPositions();
+                document.getElementById('newPositionCol').classList.remove('d-none')
+                document.getElementById('newPositionButton').textContent = addPositionButtonText;
+                event.stopPropagation();
+                return true;
+            });
+        });
+        document.getElementById('newPositionButton').addEventListener('click', (event) => newPositionButtonClicked());
+        onClassChange('#positionContainer', (classList) => {
+            if(classList.contains('d-none')){
+                document.getElementById('subpositionContainer').classList.add('d-none');
+            }
+        });
+    });
+
+    function clearPositionContainer(){
+        Array.from(document.getElementById('positionContainer').children).forEach((child) => {
+            child.parentNode.removeChild(child);
+        });
+    }
+
+    function clearSubPositionContainer(){
+        Array.from(document.getElementById('subpositionContainer').children).forEach((child) => {
+            child.parentNode.removeChild(child);
+        });
+    }
+
+    function addPosition(positionName){
+        document.getElementById('newPositionButton').textContent = addPositionButtonText;
+        const template = `
+            <button class="btn btn-secondary" position='${positionName}'>${positionName}</button>
+        `;
+
+        document.getElementById('positionContainer').insertAdjacentHTML('beforeend', template);
+        document.getElementById('positionContainer').classList.remove('d-none');
+        document.querySelector(`[position='${positionName}']`).addEventListener('click', (event) => {
+            selectedPosition = event.target.getAttribute('position');
+            document.getElementById('newPositionButton').textContent = addSubPositionButtonText;
+            if(document.querySelector('#positionContainer > button.active') != null) document.querySelector('#positionContainer > button.active').classList.remove('active');
+            event.target.classList.add('active');
+            clearSubPositionContainer();
+            fetchSubPositions(positionName);
+            event.stopPropagation();
+            return true;
+        });
+    }
+
+    function addSubposition(subpositionName){
+        document.getElementById('newPositionButton').text = addSubPositionButtonText;
+        const position = document.querySelector('#positionContainer > active')
+        const template = `
+            <button class="btn btn-secondary" subposition='${subpositionName}'>${subpositionName}</button>
+        `;
+        document.getElementById('subpositionContainer').insertAdjacentHTML('beforeend', template);
+        document.getElementById('subpositionContainer').classList.remove('d-none');
+    }
+
+    function fetchPositions(){
+        const url = '{{ url_for(endpoint="get_positions")}}';
+        fetch(`${url}?side=${selectedSide}`, {
+            method: "GET", 
+            headers: {"Content-Type": "application/json"},
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            clearPositionContainer();
+            clearSubPositionContainer();
+            data.forEach((position) => addPosition(position))
+        })
+    }
+
+    function fetchSubPositions(){
+        const url = '{{ url_for(endpoint="get_subpositions")}}';
+        fetch(`${url}?position=${selectedPosition}`, {
+            method: "GET", 
+            headers: {"Content-Type": "application/json"},
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            clearSubPositionContainer();
+            data.forEach((subposition) => addSubposition(subposition));
+
+        })
+    }
+
+    function savePosition(position, callbackOnComplete=undefined){
+        const url = '{{ url_for(endpoint="save_position")}}';
+        var side = document.querySelector('#typeRadioButtons > .active');
+        if(side == null || side.getAttribute('for') == null){
+            alert('Unable to save Position, please team side');
+            return;
+        }
+        side = side.getAttribute('for');
+        fetch(url, {
+            method: "POST", 
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({position: position, side: side})
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            if(callbackOnComplete != undefined) callbackOnComplete()
+        })
+    }
+
+    function saveSubPosition(subPosition, callbackOnComplete=undefined){
+        const url = '{{ url_for(endpoint="save_subposition")}}';
+        var position = document.querySelector('#positionContainer > button.active');
+
+        if(position == null || position.getAttribute('position') == null){
+            alert('Unable to save subPosition, please select a subposition');
+            return;
+        }
+        position = position.getAttribute('position');
+        fetch(url, {
+            method: "POST", 
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({subposition: subPosition, position: position})
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            if(callbackOnComplete != undefined) callbackOnComplete()
+        })
+    }
+
+    function newPositionButtonClicked(){
+        const positionName = document.getElementById('newPositionInput').value;
+        if(positionName === ''){
+            // handle invalid position name
+            console.log('invalid position name');
+            return;
+        }
+        if(selectedSide === undefined){
+            console.log('No side selected. Not happening son');
+        }else if(selectedPosition === undefined){
+            savePosition(positionName, fetchPositions);
+        }else{
+            saveSubPosition(positionName, fetchSubPositions);
+        }
+
+        event.stopPropagation();
+        return true;
+    }
+    
+</script>
+
+{% endblock script %}
+

@@ -1,0 +1,21 @@
+{% extends '_layout.html' %}
+
+{% block title %}Player Generation Management{% endblock title %}
+
+{% block body %}
+<div class="row justify-content-center text-center">
+  <!-- Position should be a selectable drop down -->
+  <!-- Type should be a selectable drop down based on the chosen Position. Probably worth doing a raw ajax against the chosen value, though we could just supply a hash of positions to arrays of their sub positions as well? -->
+  <div class="dropdown">
+    <button class="btn btn-secondary dropdown-toggle mr-3" id="positionDropdown" type="button" data-toggle="dropdown">Position</button>
+    <div class="dropdown-menu">
+      {% for position in positions: %}
+      <a class="dropdown-item" onclick="document.getElementById('positionDropdown').textContent = this.textContent;">{{ position }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <button class="btn btn-secondary dropdown-toggle ml-3">Type</button>
+  <div class="dropdown-menu" id="subpositionDropdown">
+  </div>
+</div>
+{% endblock body %}

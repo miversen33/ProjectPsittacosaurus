@@ -1,0 +1,159 @@
+{% extends '_layout.html' %}
+
+{% block style %}
+<style>
+    .removeIndicator{
+        background-color: rgba(48, 45, 45, 0.233);
+    }
+
+    .newAttr{
+        background-color: rgba(209, 196, 82, 0.233);
+    }
+</style>
+{% endblock style %}
+{% block title %}Attribute Management{% endblock title %}
+
+{% block body %}
+<script>
+    const ATTR_NAME_KEY = '{{ attrName }}';
+    const BOOSTABLE_KEY = '{{ boostable }}';
+    const STATE_KEY     = '{{ state }}';
+
+    function saveNewAttribute(attribute, boostable, isNew=true){
+        if(attribute == null || attribute == undefined || attribute === ''){
+            return;
+        }
+        var attrsOnPage = document.getElementsByName(attribute.toLocaleLowerCase());
+        if(attrsOnPage.length > 0 && !attrsOnPage[0].classList.contains('backgroundFlash')){
+            var attr = attrsOnPage[0];
+            setTimeout(() => {
+                attr.classList.remove('backgroundFlash')}
+                , 2001
+            );
+            attr.classList.add('backgroundFlash');
+        }
+        if(attrsOnPage.length > 0) return;
+        var container = document.getElementById('attrs');
+        const template = `
+        <div class="row rounded attr ${isNew ? 'newAttr' : ''} ${(boostable ? 'boostable' : '')}" name="${attribute.toLocaleLowerCase()}">
+            <div class="col">
+                <div class="row">
+                    <button class="btn btn-secondary m-2" for="${attribute.toLocaleLowerCase()}">
+                        <i class="fas fa-minus" aria-hidden="true" for="${attribute.toLocaleLowerCase()}"></i>
+                    </button>
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <div>${attribute}</div>
+                            ${(boostable ? '<span class="text-muted">Boostable</span>' : '')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `
+        container.insertAdjacentHTML('beforeend', template);
+        Array.from(document.querySelectorAll(`[for="${attribute.toLocaleLowerCase()}"]`))
+            .forEach((child) => 
+                child.addEventListener('click', (event) => 
+                    {
+                        var c = document.querySelector(`button[for='${attribute.toLocaleLowerCase()}']`).children[0];
+                        var p = document.querySelector(`div[name='${attribute.toLocaleLowerCase()}']`);
+                        if(c.classList.contains('fa-minus')){
+                            if(!p.classList.contains('newAttr')){
+                                c.classList.remove('fa-minus');
+                                c.classList.add('fa-plus');
+                                document.querySelector(`div[name="${attribute.toLocaleLowerCase()}"]`).classList.add('removeIndicator');
+                            }else{
+                                p.parentNode.removeChild(p);
+                            }
+                        }else{
+                            c.classList.add('fa-minus');
+                            c.classList.remove('fa-plus');
+                            document.querySelector(`div[name="${attribute.toLocaleLowerCase()}"]`).classList.remove('removeIndicator');
+                        }
+                        event.stopPropagation();
+                        return true;
+                    }
+                ));
+        document.querySelector(`div[name="${attribute.toLocaleLowerCase()}"]`).addEventListener('dblclick', (event) => {
+            if(document.querySelector(`div[name="${attribute.toLocaleLowerCase()}"]`).classList.contains('removeIndicator')) return;
+            const target = document.querySelectorAll(`div[name="${attribute.toLocaleLowerCase()}"] span.text-muted`)[0];
+            if(target == undefined){
+                const parent = document.querySelectorAll(`div[name="${attribute.toLocaleLowerCase()}"] div.d-flex.align-items-center`)[0].children[0];
+                parent.insertAdjacentHTML('beforeend', '<span class="text-muted">Boostable</span>');
+                document.querySelector(`div[name="${attribute.toLocaleLowerCase()}`).classList.add('boostable');
+            }else{
+                target.parentNode.removeChild(target);
+                document.querySelector(`div[name="${attribute.toLocaleLowerCase()}`).classList.remove('boostable');
+            }
+            event.stopPropagation();
+            return true;
+        });
+        var attrInput = document.querySelector('#attribute');
+        attrInput.value='';
+        attrInput.focus();
+    }
+
+    function saveChanges(){
+        var attributes = document.querySelectorAll('.attr');
+        var attrs = [];
+        Array.from(attributes).forEach((child) => {
+            var state = 'modifiedAttr';
+            if(child.classList.contains('newAttr')) var state = 'newAttr'; 
+            if(child.classList.contains('removeIndicator')) var state = 'removeAttr'; 
+            const attr = {};
+            attr[ATTR_NAME_KEY] = child.getAttribute('name');
+            attr[BOOSTABLE_KEY] = child.classList.contains('boostable'),
+            attr[STATE_KEY] = state
+            attrs.push(attr);
+        });
+        const url = "{{ url_for('save_attributes')}}";
+        fetch(url,{
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(attrs),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log(data);
+                if(data.status === 200){
+                    window.location.reload();
+                }
+                if(data.status === 500){
+                    alert(`Server Error\nError: ${data.status}\nMessage: ${data.message}`)
+                }
+            })
+    }
+
+    ready(() => {
+        document.querySelector('#attribute').addEventListener('keyup', (event) => {
+            if(event.key === 'Enter') saveNewAttribute(document.querySelector('#attribute').value, document.querySelector('#boostable').checked);
+        })
+        document.querySelector('#boostable').addEventListener('keyup', (event) => {
+            if(event.key === 'Enter') saveNewAttribute(document.querySelector('#attribute').value, document.querySelector('#boostable').checked);
+        })
+        {% for attribute in attributes %}
+            saveNewAttribute('{{ attribute.name }}', '{{ attribute.boostable }}' === 'True' ? true : false, false);
+        {% endfor %}
+    })
+</script>
+
+<div class="row align-items-center justify-content-center">
+    <div class="w-50">
+        <div class="row">
+            <div class="input-group">
+                <input class="form-control" type="text" placeholder="Attribute" id="attribute">
+                <div class="form-check form-check-inline ml-2">
+                    <input class="form-check-input" type="checkbox" id="boostable">
+                    <label class="form-check-label" for="boostable">Boostable</label>
+                </div>
+                <button class="btn btn-secondary" onclick="saveNewAttribute(document.querySelector('#attribute').value, document.querySelector('#boostable').checked);">Add Attribute</button>
+                <button class="btn btn-primary ml-5" onclick="saveChanges()">Save Attribute Changes</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mt-2" id='attrs'></div>
+        </div>
+    </div>
+</div>
+{% endblock body %}

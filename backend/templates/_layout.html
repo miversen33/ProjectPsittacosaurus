@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap 4 specifics stylesheet. More info here https://getbootstrap.com/docs/4.0/ -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <title>
+        {% block title %}{% endblock title %}
+    </title>
+    <!-- Font awesome -->
+    <script src="https://kit.fontawesome.com/ee3b39af2e.js" crossorigin="anonymous"></script>
+    <style>
+        @keyframes backgroundFlashFrame {
+            50% { background-color: rgba(199, 11, 11, 0.233);}
+        }
+        @-webkit-keyframes backgroundFlashFrame {
+            50% { background-color: rgba(199, 11, 11, 0.233);}
+        }
+        @-moz-keyframes backgroundFlashFrame {
+            50% { background-color: rgba(199, 11, 11, 0.233);}
+        }
+
+        .backgroundFlash{
+            animation-name: backgroundFlashFrame;
+            -webkit-animation-name: backgroundFlashFrame;
+            -moz-animation-name: backgroundFlashFrame;
+            animation-iteration-count: 1;
+            -webkit-animation-iteration-count: 1;
+            -moz-animation-iteration-count: 1;
+            animation-duration: 2s;
+            -webkit-animation-duration: 2s;
+            -moz-animation-duration: 2s;
+        }
+    </style>
+    {% block style %}{% endblock style %}
+    {% block header %}{% endblock header %}
+</head>
+<body>
+    <script>
+        var observer;
+        function ready(callbackFunction){
+            if (document.readyState === "complete" || document.readyState === "interactive") {
+                setTimeout(callbackFunction, 1);
+            } else {
+                document.addEventListener("DOMContentLoaded", callbackFunction);
+            }
+        }
+
+        function onClassChange(querySelector, callback){
+            observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if(mutation.type === 'attributes' && mutation.attributeName === 'class') callback(mutation.target.classList)
+                })
+            });
+            document.querySelectorAll(querySelector).forEach((child) => observer.observe(child, {attributes: true}));
+        }
+    </script>
+    <nav class="navbar-expand-lg navbar-dark bg-dark mb-2">
+        <a href="#" class="navbar-brand">Place Holder</a>
+    </nav>
+    <div class="container-fluid">
+        {% block body %}{% endblock body %}
+    </div>
+</body>
+
+<!-- Bootstrap 4 specific scripts. More info here https://getbootstrap.com/docs/4.0/ -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+{% block script %}{% endblock script %}
+</html>
