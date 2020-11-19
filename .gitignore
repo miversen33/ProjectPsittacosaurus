@@ -6,3 +6,4 @@ backend/.vscode
 backend/football_sim_virtualenv
 backend/*.bak
 .history
+.vscode
