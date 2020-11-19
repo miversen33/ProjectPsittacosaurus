@@ -1,9 +1,10 @@
 frontend/node_modules
 frontend/*.bak
-backend/__pycache__
+*__pycache__*
 backend/.history
 backend/.vscode
 backend/football_sim_virtualenv
 backend/*.bak
+backend/memory
 .history
 .vscode
