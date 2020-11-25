@@ -31,6 +31,7 @@ def load_config(app):
             "Error trying to pull CONFIG from os environment. Defaulting to Development"
         )
     if _config is None:
+        print('No config provided. Defaulting to development config')
         _config = 'Development'
     app.config.from_object(f"config.config.{_config}")
 
