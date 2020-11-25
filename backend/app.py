@@ -24,14 +24,18 @@ def init_app(app):
 
 def load_config(app):
     try:
-        _config = os.environ.get('CONFIG')
+        _config = os.environ.get("CONFIG")
     except KeyError:
+        _config = "Development"
+        print(
+            "Error trying to pull CONFIG from os environment. Defaulting to Development"
+        )
+    if _config is None:
         _config = 'Development'
-        print('Error trying to pull CONFIG from os environment. Defaulting to Development')
-    app.config.from_object(f'config.config.{_config}')
+    app.config.from_object(f"config.config.{_config}")
 
     try:
-        app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('DATABASE_URI')
+        app.config["SQLALCHEMY_DATABASE_URI"] = app.config.get("DATABASE_URI")
     except Exception as exception:
         print(repr(exception), exception)
 
