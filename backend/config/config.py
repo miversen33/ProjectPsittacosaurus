@@ -1,8 +1,8 @@
 class Config:
-    DATABASE_URI = 'sqlite:///memory'
+    DATABASE_URI = "sqlite://database/sqlite.sql"
     DEBUG = False
     TESTING = False
-    HOST = '127.0.0.1'
+    HOST = "127.0.0.1"
     PORT = 5000
     POOL_SIZE = 20
     SQLALCHEMY_TRACK_MODIFICATIONS = False
