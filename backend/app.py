@@ -35,6 +35,9 @@ def load_config(app):
         _config = 'Development'
     app.config.from_object(f"config.config.{_config}")
 
+    if app.config.get("DATABASE_URI") == "sqlite:///memory" and os.environ.get("DATABASE_URI"):
+        print('Received Database URI via environment variable. Overwriting sqlite:///memory')
+        app.config['DATABASE_URI'] = os.environ.get("DATABASE_URI")
     try:
         app.config["SQLALCHEMY_DATABASE_URI"] = app.config.get("DATABASE_URI")
     except Exception as exception:
