@@ -81,21 +81,21 @@ def create_routes(app):
     with app.app_context():
         import controllers
 
+
 # Overrides the default `app.route` to wrap relevant routes behind a session checker
 
 
-def route(rule='', **options):
+def route(rule="", **options):
     def _validate_session(f):
         from flask import current_app as app
         from modules.authenticate import validate_session
         from modules.response import Response
         from modules.server_response_statuses import NOT_AUTHORIZED_ERROR
 
-        if 'methods' not in options.keys():
-            options['methods'] = ['GET']
-        bypass_session_validation = options.pop(
-            'bypass_session_validation', False)
-        is_internal = options.pop('is_internal', False)
+        if "methods" not in options.keys():
+            options["methods"] = ["GET"]
+        bypass_session_validation = options.pop("bypass_session_validation", False)
+        is_internal = options.pop("is_internal", False)
         endpoint = options.pop("endpoint", None)
 
         def decorator():
@@ -104,23 +104,26 @@ def route(rule='', **options):
                 # log_api_hit(route, _data.copy(), response)
                 return response
             else:
-                return Response(status_code=NOT_AUTHORIZED_ERROR, status_text='Invalid Session')
+                return Response(
+                    status_code=NOT_AUTHORIZED_ERROR, status_text="Invalid Session"
+                )
 
         if not bypass_session_validation and not is_internal:
             decorator.__name__ = f.__name__
-            app.add_url_rule(rule=rule, endpoint=endpoint,
-                             view_func=decorator, **options)
+            app.add_url_rule(
+                rule=rule, endpoint=endpoint, view_func=decorator, **options
+            )
             return decorator
         else:
-            app.add_url_rule(rule=rule, endpoint=endpoint,
-                             view_func=f, **options)
+            app.add_url_rule(rule=rule, endpoint=endpoint, view_func=f, **options)
             return f
+
     return _validate_session
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = create_app()
     app.run(
-        host=app.config['HOST'],
-        port=app.config['PORT'],
+        host=app.config["HOST"],
+        port=app.config["PORT"],
     )
