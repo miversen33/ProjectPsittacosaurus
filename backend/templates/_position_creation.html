@@ -72,6 +72,12 @@
                 document.getElementById('subpositionContainer').classList.add('d-none');
             }
         });
+        document.getElementById('newPositionInput').addEventListener('keyup', (event) => {
+            if(event.keyCode === 13){
+                event.preventDefault();
+                document.getElementById('newPositionButton').click();
+            }
+        });
     });
 
     function clearPositionContainer(){
