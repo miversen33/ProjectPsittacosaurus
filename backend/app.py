@@ -47,9 +47,11 @@ def load_config(app):
 def init_db(app):
     app.db = SQLAlchemy(app)
     with app.app_context():
-        # import models
-        from models.models import init_tables
-        init_tables(app.db)
+        import models
+
+        # from models.models import init_tables
+
+        # init_tables(app.db)
     # app.db.create_all()
 
     def attempt_commit():
