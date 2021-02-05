@@ -1,0 +1,9 @@
+FROM alpine:latest
+
+RUN apk add git python3 python3-dev py3-pip sqlite py3-bcrypt libffi-dev postgresql gcc musl-dev postgresql-dev
+RUN cd /opt/ && \
+    git clone https://github.com/miversen33/ProjectPsittacosaurus.git /opt/football_sim && \
+    cd /opt/football_sim/backend && \
+    pip3 install -r requirements.txt
+
+ENTRYPOINT [ "run.sh" ]
