@@ -6,10 +6,6 @@ _ATTR_NAME = 'attrName'
 _BOOSTABLE = 'boostable'
 _STATE = 'state'
 
-# {'route': '/_attribute_generation', 'endpoint': attribute_generation_page, IS_INTERNAL: True},
-# @app.route('/_attribute_generation', is_internal=True)
-
-
 @app.route('/_attribute_generation', is_internal=True)
 def attribute_generation_page():
     vars = dict(
