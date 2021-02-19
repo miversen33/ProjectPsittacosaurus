@@ -47,18 +47,13 @@ def load_config(app):
 def init_db(app):
     app.db = SQLAlchemy(app)
     with app.app_context():
+        # While this may seem unimportant, this actually runs models/__init__.py which initializes all the models. Ignore linting errors here
         import models
 
-        # from models.models import init_tables
-
-        # init_tables(app.db)
-    # app.db.create_all()
-
     def attempt_commit():
-        # from sqlalchemy.exc import InterfaceError
         try:
             app.db.session.commit()
-        except Exception as exception:
+        except:
             app.db.session.rollback()
             raise
     app.db.session.attempt_commit = attempt_commit
