@@ -9,6 +9,8 @@ class Config:
 
 
 class Development(Config):
+    # If enabled, this will auto create any triggers found in backend/database/setup/triggers. See backend/database/setup/triggers/create_triggers.py for more details
+    WATCH_TRIGGERS = True
     DEBUG = True
 
 
