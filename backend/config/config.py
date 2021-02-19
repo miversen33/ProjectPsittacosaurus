@@ -1,5 +1,4 @@
 class Config:
-    DATABASE_URI = "sqlite:///database/sqlite.db"
     DEBUG = False
     TESTING = False
     HOST = "127.0.0.1"
