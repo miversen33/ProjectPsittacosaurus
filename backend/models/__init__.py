@@ -11,12 +11,18 @@ from flask import current_app as app
 
 
 def check_db():
-    from database.setup.triggers.create_triggers import check_for_missing_triggers
+    # TODO(Mike): This should instead check for if the server is running in development mode instead of
+    # looking for the "watch triggers" config. If we are in development mode, it makes sense that
+    # we would just auto create any new triggers that are created. However if we aren't in development 
+    # (IE, we are in testing/production/etc), we _shouldn't_ do that.
+    if app.config.get("WATCH_TRIGGERS", False):
+        from database.setup.triggers.create_triggers import check_for_missing_triggers
+        check_for_missing_triggers(app.db.engine)
 
-    check_for_missing_triggers(app.db.engine)
-    # TODO(Mike): Handle basic setup? Mass insert of starter attributes, positions, subpositions, etc
+    from database.setup.init_scripts.table_population import populate_tables
+    populate_tables()
     pass
 
 
-if app and app.config.get("WATCH_TRIGGERS", False):
+if app:
     check_db()
