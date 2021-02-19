@@ -7,4 +7,8 @@ backend/football_sim_virtualenv
 backend/*.bak
 backend/memory
 .history
-.vscode
+.vscode,
+*.bak*
+*.db*
+.vscode/launch.json
+.vscode/settings.json
