@@ -12,6 +12,7 @@ count, = cursor.fetchone()
 if count > 0:
 	sys.exit(0)
 try:
+	print('Restoring Table: position')
 	cursor.execute("INSERT INTO position (id,name,side) VALUES (2, 'Quarterback', 'offense')")
 	cursor.execute("INSERT INTO position (id,name,side) VALUES (3, 'Running Back', 'offense')")
 	cursor.execute("INSERT INTO position (id,name,side) VALUES (4, 'Full Back', 'offense')")
@@ -29,7 +30,9 @@ try:
 	cursor.execute("INSERT INTO position (id,name,side) VALUES (16, 'Defensive End', 'defense')")
 	cursor.execute("INSERT INTO position (id,name,side) VALUES (17, 'Kicker', 'special_teams')")
 	cursor.execute("INSERT INTO position (id,name,side) VALUES (18, 'Punter', 'special_teams')")
+	cursor.execute("ALTER SEQUENCE position_id_seq RESTART WITH 18")
 	db_connection.commit()
+	print('Restored Table: position Succesfully')
 except:
 	sys.exit(1)
 cursor.close()
