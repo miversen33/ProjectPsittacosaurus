@@ -4,8 +4,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import insert, select
 
 from .attributes import Attribute
-
-
 class Position(app.db.Model):
     __tablename__ = 'position'
 

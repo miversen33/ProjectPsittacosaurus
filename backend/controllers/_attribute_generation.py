@@ -19,7 +19,6 @@ def attribute_generation_page():
 
 
 def _get_attributes():
-    db = app.db
     return [
         dict(
             name=attribute.name.replace('_', ' ').title(),
