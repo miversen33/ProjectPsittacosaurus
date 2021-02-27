@@ -2,83 +2,81 @@
 
 import os
 from typing import Any
-from json import JSONDecodeError
+import logging
 
 from flask import Flask, json, request
 from flask_sqlalchemy import SQLAlchemy
-
 
 def create_app():
     app = Flask(__name__)
     init_app(app)
     return app
 
-
 def init_app(app):
     load_config(app)
     init_db(app)
     create_routes(app)
-
     return app
 
-
 def load_config(app):
+    _pending_logs = [{'level': logging.DEBUG, 'log': 'Loading Configuration'}]
     try:
         _config = os.environ.get("CONFIG")
     except KeyError:
         _config = "Development"
-        print(
-            "Error trying to pull CONFIG from os environment. Defaulting to Development"
-        )
+        _pending_logs.append({'level': logging.DEBUG, 'log': "Error trying to pull CONFIG from os environment. Defaulting to Development"})
     if _config is None:
-        print('No config provided. Defaulting to development config')
+        _pending_logs.append({'level': logging.DEBUG, 'log': 'No config provided. Defaulting to development config'})
         _config = 'Development'
     app.config.from_object(f"config.config.{_config}")
 
-    if app.config.get("DATABASE_URI") == "sqlite:///memory" and os.environ.get("DATABASE_URI"):
-        print('Received Database URI via environment variable. Overwriting sqlite:///memory')
-        app.config['DATABASE_URI'] = os.environ.get("DATABASE_URI")
+    # We need this to be done after the config is loaded
+    with app.app_context():
+        from modules.logger import init_logger
+        init_logger(app, 'server')
+        # Im not sold on exactly how to do this since we are going to have to do some fancy shit to make the APILogger be usable with the logger. It might be 
+        # worth creating a completely different handler for the API that we init here, but then we still need to figure out how to send all the API info over
+        init_logger(app, 'api')
+
+    logger = logging.getLogger('server')
+    [logger.log(level=log['level'], msg=log['log']) for log in _pending_logs]
+    del _pending_logs
+
     try:
         app.config["SQLALCHEMY_DATABASE_URI"] = app.config.get("DATABASE_URI")
     except Exception as exception:
-        print(repr(exception), exception)
+        logger.log(logging.ERROR, f"No database found. Exception: {exception} -> {repr(exception)}")
+    logger.log(logging.DEBUG, 'Configuration Loaded')
 
 
 def init_db(app):
+    logger = logging.getLogger('server')
+    logger.log(logging.DEBUG, 'Initializing Database')
     app.db = SQLAlchemy(app)
     with app.app_context():
-        # While this may seem unimportant, this actually runs models/__init__.py which initializes all the models. Ignore linting errors here
         import models
+        # While this may seem unimportant, this actually runs models/__init__.py which initializes all the models. Ignore linting errors here
 
     def attempt_commit():
         try:
             app.db.session.commit()
         except:
             app.db.session.rollback()
+            logging.getLogger('server').log(logging.ERROR, 'Unable to commit database changes!')
             raise
     app.db.session.attempt_commit = attempt_commit
-
-    if app.config.get('WATCH_TRIGGERS', False):
-        from database.setup.triggers import create_triggers
-        create_triggers.check_for_missing_triggers(app.db.engine)
-    pass
-
-    # Verify all triggers are present
-
-
-def get_db():
-
-    pass
+    logger.log(logging.DEBUG, 'Database Initialized')
 
 
 def create_routes(app):
+    logger = logging.getLogger('server')
+    logger.log(logging.DEBUG, 'Creating Routes')
     app.route = route
     with app.app_context():
         import controllers
-
+    logger.log(logging.DEBUG, 'Routes Created')
 
 # Overrides the default `app.route` to wrap relevant routes behind a session checker
-
 
 def route(rule="", **options):
     def _validate_session(f):
@@ -96,6 +94,7 @@ def route(rule="", **options):
         def decorator():
             if validate_session():
                 response = f()
+                # TODO(Mike): Go read APILog.Factory
                 # log_api_hit(route, _data.copy(), response)
                 return response
             else:

@@ -51,3 +51,38 @@ class APILog(app.db.Model):
             route_output={self.route_output}
         )
         '''
+
+class Log(app.db.Model):
+    __tablename__ = 'log'
+
+    id = Column(
+        'id', Integer, primary_key=True, autoincrement=True, unique=True, nullable=False
+    )
+
+    time = Column(
+        'time', DateTime, default=datetime.now(), nullable=False, index=True
+    )
+
+    level = Column(
+        'level', String, nullable=False, default='DEBUG'
+    )
+
+    filename = Column(
+        'filename', String, nullable=True
+    )
+
+    filepath = Column(
+        'filepath', String, nullable=True
+    )
+
+    line_number = Column(
+        'line_number', Integer, nullable=True
+    )
+
+    logger_name = Column(
+        'logger_name', String, nullable=True
+    )
+
+    message = Column(
+        'message', String, nullable=False
+    )

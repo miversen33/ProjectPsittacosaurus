@@ -1,3 +1,4 @@
+import logging
 from flask import render_template, request, current_app as app, session, json
 from models.attributes import Attribute
 
@@ -45,10 +46,10 @@ def save_attributes():
             elif state in ['newAttr', 'modifiedAttr']:
                 _save_attribute(name, boostable)
             else:
-                print(
-                    f'I dont know what you want me to do with state: {state}')
+                logging.getLogger('server').log(logging.INFO, f'I dont know what you want me to do with state: {state}')
         except Exception as exception:
             status = 500
+            logging.getLogger('server').log(logging.INFO, f'Received exception while trying to save attribute {name}. Error: {exception} -> {repr(exception)}')
             message = repr(exception)
 
     return json.dumps(dict(status=status, message=message))
@@ -60,16 +61,19 @@ def _remove_attribute(name):
     attribute = Attribute.query.filter_by(name=name).first()
     if attribute:
         db.session.delete(attribute)
+        logging.getLogger('server').log(logging.DEBUG, f'Removing Attribute: {repr(attribute)}')
         db.session.attempt_commit()
-    # db.session.delete()
 
 
 def _save_attribute(name, boostable):
     db = app.db
     name = name.lower().replace(' ', '_')
-    attribute = Attribute.query.filter_by(name=name)
-    if len(attribute.all()) > 0:
-        attribute.update({'boostable': boostable})
+    attributes = Attribute.query.filter(Attribute.name == name)
+    if len(attributes.all()) > 0:
+        logging.getLogger('server').log(logging.DEBUG, f'Updating Attribute: {name} to Boostable Value: {boostable}')
+        attributes.update({'boostable': boostable})
     else:
-        db.session.add(Attribute(name=name, boostable=boostable))
+        attribute = Attribute(name=name, boostable=boostable)
+        logging.getLogger('server').log(logging.DEBUG, f'Adding Attribute: {repr(attribute)}')
+        db.session.add(attribute)
     db.session.attempt_commit()

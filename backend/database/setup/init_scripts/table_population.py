@@ -1,3 +1,4 @@
+import logging
 import shlex
 
 from os.path import exists
@@ -15,28 +16,27 @@ def populate_tables():
 
     NOTE: This will not run the __init__.py, if that script exists
     '''
+    logger = logging.getLogger('server')
     _THREAD_LIMIT = 4
     _EXCLUSION_EXTENSIONS = ['.sql']
     
     db_uri = app.config.get('DATABASE_URI', '')
     if not db_uri:
-        print('Unable to find database connection!')
+        logger.log(logging.WARN, 'Unable to find database connection!')
         return
     db_uri = db_uri.replace('!', '\\!').replace('$', '\\\$')
     init_files_path: Path = app.config.get('DB_POPULATION_SCRIPTS_LOCATIONS', '')
     if not init_files_path:
-        # TODO(Mike): Logging?
-        print('No init files found')
+        logger.log(logging.WARN, 'No init files found')
         return
     if not isinstance(init_files_path, Path):
-        print('Invalid init_files_path. Attempting manual conversion...')
+        logger.log(logging.INFO, 'Invalid init_files_path. Attempting manual conversion...')
         init_files_path = Path(init_files_path)
     if not exists(init_files_path.resolve()):
-        print('init_files_path location not found')
         return
     scripts = list(init_files_path.glob('**/*'))
     if not scripts:
-        print('No init scripts found')
+        logger.log(logging.INFO, 'No init scripts found')
         return
 
     for script in scripts:
@@ -44,7 +44,7 @@ def populate_tables():
         if script.suffix in _EXCLUSION_EXTENSIONS and script.name != '__init__.py':
             continue
         cmd = f'/bin/sh -c "{script.resolve()} {db_uri}"'
+        logger.log(logging.INFO, f'Running restore script: {script}')
         completed_process: subprocess.CompletedProcess = run(shlex.split(cmd))
         if completed_process.returncode != 0:
-            # TODO(Mike): Logger
-            print(f'Unable to complete {script.name}')
+            logger.log(logging.WARN, f'Unable to complete {script.name}')

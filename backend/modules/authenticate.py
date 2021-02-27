@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import logging
 from passlib.hash import bcrypt as hasher
 from flask import request, g, current_app as app, session, json
 from json import JSONDecodeError
@@ -47,15 +48,13 @@ def _login():
     try:
         data = _decode_auth_info()
     except ParseError as error:
-        print(repr(error), error)
+        logging.getLogger('api').log(logging.WARN, f'Received error while processing login. Error: {error} -> {repr(error)}')
         status_text = _INVALID_DATA_FORMAT_ERROR
         status = BAD_REQUEST
         return Response({}, status_code=status, status_text=status_text)
     matches = User.query.filter_by(user_name=data['username'])
     if len(matches.all()) > 1:
-        # TODO(Mike) Convert to logging!
-        print(
-            f'Username {data["username"]} has multiple occurrences! How the fuck did you manage to do this????')
+        logging.getLogger('api').log(logging.ERROR, f'Username {data["username"]} has multiple occurrences! How the fuck did you manage to do this????')
 
     user = None
     try:
@@ -101,7 +100,7 @@ def _logout():
         data = _decode_auth_info()
         _invalidate_session(user_id=data['userid'])
     except ParseError as error:
-        print(error)
+        logging.getLogger('api').log(logging.WARN, f'Received error while processing logout. Error: {error} -> {repr(error)}')
         status_text = _INVALID_DATA_FORMAT_ERROR
         status = BAD_REQUEST
 
@@ -116,6 +115,7 @@ def _logout():
 
 def _new_user():
     # TODO(Mike) Eventually we need to return a link that can be clicked to "authenticate" the new user. For now, just a 200 works
+    logger = logging.getLogger('api')
     status = BAD_REQUEST
     status_text = ''
     try:
@@ -133,13 +133,12 @@ def _new_user():
         )
 
         status = SUCCESS
-    # TODO(Mike) log the error to a log indicating some sort of shit so we know what the fuck happened?
     except ParseError as error:
-        print(error)
+        logger.log(logging.INFO, error)
         status = INTERNAL_SERVER_ERROR
         status_text = _INVALID_DATA_FORMAT_ERROR
     except KeyError as error:
-        print(error)
+        logger.log(logging.INFO, error)
         status = INTERNAL_SERVER_ERROR
         status_text = _INVALID_DATA_PROVIDED_ERROR
 
@@ -185,15 +184,15 @@ def _validate_user_creds(user: User, check_password, increment_failure_count=Tru
 
 
 def _prepare_modify_user(user_id):
-    db = app.db
+    logger = logging.getLogger('api')
     user = User.query.filter_by(user_id=user_id)
     if len(user.all()) == 0:
-        # TODO(Mike): Enable Logging
+        log = f"Something happened with userid {user_id}. Couldn't find any users!"
+        logger.log(logging.ERROR, log)
         raise AuthenticationError(
             f"Something happened with userid {user_id}. Couldn't find any users!")
     if len(user.all()) > 1:
-        # TODO(Mike): Enable Logging
-        print(f"Somehow userid {user_id} is associated with more than 1 user?")
+        logger.log(logging.WARN, f"Somehow userid {user_id} is associated with more than 1 user?")
     user = user.first()
     user_data = {key: user.__getattribute__(
         key) for key in User.editable_fields}
@@ -214,7 +213,7 @@ def _modify_user(user_id, user_password, keys, new_user_data):
         raise AuthenticationError(
             f"Something happened with userid {user_id}. Couldn't find any users!")
     if len(user_model.all()) > 1:
-        print(f"Somehow userid {user_id} is associated with more than 1 user?")
+        logging.getLogger('api').log(logging.INFO, f"Somehow userid {user_id} is associated with more than 1 user?")
     user = user_model.first()
     if not _validate_user_creds(user, user_password, False):
         raise AuthenticationError(
@@ -224,8 +223,7 @@ def _modify_user(user_id, user_password, keys, new_user_data):
     # Might be better performance to have the for loop be a foreach loop (IE, get the key,value pair instead of just the key)
     for key in new_user_data.keys():
         if key not in restricted_keys and key not in keys:
-            print(
-                f'Im not processing key:{key} value:{new_user_data[key]} because its not in the native keys for the user model. Stop trying to break me')
+            logging.getLogger('api').log(logging.WARN, f'Im not processing key:{key} value:{new_user_data[key]} because its not in the native keys for the user model. Stop trying to break me!')
             continue
         if key in restricted_keys:
             if key == 'is_active':
@@ -270,7 +268,7 @@ def _invalidate_session(user=None, user_id=None):
         db.session.delete(UserSession.query.filter_by(user_id=user_id).first())
         # UserSession.query.filter_by(user_id=user_id).delete()
     else:
-        print("I have no idea what you're expecting here idiot. Nothing is going to happen with your user_session")
+        logging.getLogger('api').log(logging.WARN, "I have no idea what you're expecting here idiot. Nothing is going to happen with your user_session")
     db.session.attempt_commit()
     _start_session_invalidater()
 
@@ -296,8 +294,7 @@ def _handle_invalid_login(user: User):
     user.consecutive_failed_logins += 1
     if user.consecutive_failed_logins >= _LOGIN_FAILURE_LIMIT:
         user.is_active = 0
-        print(
-            f'Locking User {user.user_name}:{user.id} as it has reached the login failure limit')
+        logging.getLogger('api').log(logging.INFO, f'Locking User {user.user_name}:{user.id} as it has reached the login failure limit')
     return
 
 
@@ -331,8 +328,7 @@ def validate_session():
 
     valid_session = len(sessions.all()) == 1
     if len(sessions.all()) > 1:
-        print(
-            f'Somehow the User:{request.cookies.get("userid")} has multiple sessions with the same UserSession Type:{request.cookies.get("session_type")}')
+        logging.getLogger('api').log(logging.INFO, f'Somehow the User:{request.cookies.get("userid")} has multiple sessions with the same UserSession Type:{request.cookies.get("session_type")}')
         valid_session = True
 
     if valid_session:
