@@ -53,10 +53,6 @@ def init_db(app):
     logger = logging.getLogger('server')
     logger.log(logging.DEBUG, 'Initializing Database')
     app.db = SQLAlchemy(app)
-    with app.app_context():
-        import models
-        # While this may seem unimportant, this actually runs models/__init__.py which initializes all the models. Ignore linting errors here
-
     def attempt_commit():
         try:
             app.db.session.commit()
@@ -65,6 +61,10 @@ def init_db(app):
             logging.getLogger('server').log(logging.ERROR, 'Unable to commit database changes!')
             raise
     app.db.session.attempt_commit = attempt_commit
+    
+    with app.app_context():
+        import models
+        # While this may seem unimportant, this actually runs models/__init__.py which initializes all the models. Ignore linting errors here
     logger.log(logging.DEBUG, 'Database Initialized')
 
 
